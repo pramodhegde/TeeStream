@@ -1,16 +1,17 @@
-#include "TeeStream.h"
-#include <iostream>
-#include <fstream>
-#include <sstream>
-#include <vector>
-#include <chrono>
-#include <thread>
-#include <iomanip>
-#include <numeric>
 #include <algorithm>
-#include <random>
+#include <atomic>
+#include <chrono>
+#include <fstream>
 #include <functional>
+#include <iomanip>
+#include <iostream>
 #include <memory>
+#include <numeric>
+#include <random>
+#include <sstream>
+#include <thread>
+#include <vector>
+#include "TeeStream.h"
 
 // Simple timer class for benchmarking
 class Timer {

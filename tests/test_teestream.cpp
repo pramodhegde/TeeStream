@@ -1,13 +1,16 @@
 #include "TeeStream.h"
-#include <gtest/gtest.h>
-#include <sstream>
-#include <thread>
-#include <vector>
-#include <future>
+
 #include <chrono>
+#include <cstring>
+#include <future>
 #include <iomanip>
 #include <limits>
 #include <random>
+#include <sstream>
+#include <thread>
+#include <vector>
+
+#include <gtest/gtest.h>
 
 // Test basic functionality
 TEST(TeeStreamTest, BasicOutput) {
