@@ -16,6 +16,7 @@ A high-performance thread-safe C++ library for writing to multiple output stream
 - C++17 compatible compiler
 - CMake 3.14 or higher (for building)
 - GoogleTest (automatically downloaded if not found, for testing)
+- Asio (automatically downloaded if not found, for network examples)
 
 ## Installation
 
@@ -106,35 +107,36 @@ int main() {
 
 ### Network and File Logging Example
 
-TeeStream can be used to simultaneously write to network sockets and files, which is useful for logging and data streaming applications:
+TeeStream can be used to simultaneously write to network sockets and files, which is useful for logging and data streaming applications. The example uses Asio for modern, cross-platform networking:
 
 ```cpp
 #include "TeeStream.h"
 #include <iostream>
 #include <fstream>
-#include <sys/socket.h>
-#include <arpa/inet.h>
-#include <unistd.h>
+#include <asio.hpp>
 
-// Custom streambuf for TCP socket
-class SocketStreambuf : public std::streambuf {
+// Custom streambuf for Asio TCP socket
+class AsioSocketStreambuf : public std::streambuf {
     // ... implementation ...
 };
 
-class SocketStream : public std::ostream {
-    SocketStreambuf buf;
+class AsioSocketStream : public std::ostream {
+    // ... implementation ...
 public:
-    explicit SocketStream(int socket_fd) : std::ostream(nullptr), buf(socket_fd) {
-        rdbuf(&buf);
-    }
+    explicit AsioSocketStream(std::shared_ptr<asio::ip::tcp::socket> socket);
+    bool is_connected() const;
 };
 
 int main() {
-    // Create TCP socket
-    int sock_fd = /* connect to server */;
+    // Initialize Asio
+    asio::io_context io_context;
+    auto socket = std::make_shared<asio::ip::tcp::socket>(io_context);
+    
+    // Connect to server
+    asio::connect(*socket, resolver.resolve("127.0.0.1", "12345"));
     
     // Create socket stream
-    SocketStream socket_stream(sock_fd);
+    AsioSocketStream socket_stream(socket);
     
     // Create file stream
     std::ofstream file_stream("log.txt");
@@ -155,8 +157,8 @@ int main() {
 A complete example is provided in `examples/socket_example.cpp`. To run it:
 
 ```bash
-# First, start the test server (requires Python 3)
-python3 examples/simple_tcp_server.py
+# First, start a TCP server (e.g., using netcat)
+nc -l 12345
 
 # In another terminal, run the socket example
 ./build/examples/socket_example
