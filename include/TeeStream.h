@@ -12,6 +12,7 @@
 #include <thread>
 #include <functional>
 #include <shared_mutex>
+#include <sstream>  // For std::ostringstream in batch_write
 
 // A high-performance thread-safe tee streambuf using thread-local buffers
 class TeeStreamBuf : public std::streambuf {
@@ -21,8 +22,19 @@ private:
         std::unique_ptr<char[]> buffer;
         size_t size;
         size_t used;
+        
+        // For adaptive buffer sizing
+        double avg_write_size;
+        int sample_count;
+        size_t max_buffer_size;
 
-        explicit ThreadBuffer(size_t buffer_size);
+        explicit ThreadBuffer(size_t buffer_size, size_t max_size = 1048576);
+        
+        // Update buffer statistics for adaptive sizing
+        void update_stats(size_t write_size);
+        
+        // Resize buffer if needed based on usage patterns
+        bool adapt_buffer_size();
     };
 
     // Thread-local storage for buffers
@@ -52,6 +64,15 @@ public:
     
     // Manually flush the thread-local buffer
     void flush_thread_buffer();
+    
+    // Batch write multiple items
+    template<typename... Args>
+    void batch_write(const Args&... args) {
+        std::ostringstream batch_buffer;
+        (batch_buffer << ... << args);  // C++17 fold expression
+        std::string str = batch_buffer.str();
+        this->xsputn(str.c_str(), str.size());
+    }
 
 protected:
     // Override streambuf methods

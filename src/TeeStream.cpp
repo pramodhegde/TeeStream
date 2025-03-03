@@ -5,10 +5,45 @@
 thread_local std::unique_ptr<TeeStreamBuf::ThreadBuffer> TeeStreamBuf::local_buffer;
 
 // ThreadBuffer implementation
-TeeStreamBuf::ThreadBuffer::ThreadBuffer(size_t buffer_size)
+TeeStreamBuf::ThreadBuffer::ThreadBuffer(size_t buffer_size, size_t max_size)
     : buffer(std::make_unique<char[]>(buffer_size)),
       size(buffer_size),
-      used(0) {}
+      used(0),
+      avg_write_size(0),
+      sample_count(0),
+      max_buffer_size(max_size) {}
+
+// Update buffer statistics for adaptive sizing
+void TeeStreamBuf::ThreadBuffer::update_stats(size_t write_size) {
+    // Update moving average of write sizes
+    sample_count++;
+    avg_write_size = avg_write_size + (write_size - avg_write_size) / sample_count;
+}
+
+// Resize buffer if needed based on usage patterns
+bool TeeStreamBuf::ThreadBuffer::adapt_buffer_size() {
+    // Only consider adaptation after collecting enough samples
+    if (sample_count < 100) {
+        return false;
+    }
+    
+    // If average write size is consistently larger than half the buffer,
+    // consider increasing the buffer size
+    if (avg_write_size > size / 2) {
+        size_t new_size = size * 2;  // Double the buffer size
+        if (new_size <= max_buffer_size) {
+            auto new_buffer = std::make_unique<char[]>(new_size);
+            // Copy existing data
+            std::memcpy(new_buffer.get(), buffer.get(), used);
+            buffer = std::move(new_buffer);
+            size = new_size;
+            sample_count = 0;  // Reset sampling
+            return true;
+        }
+    }
+    
+    return false;
+}
 
 // Get or create thread-local buffer
 TeeStreamBuf::ThreadBuffer* TeeStreamBuf::get_thread_buffer() {
@@ -99,14 +134,22 @@ std::streamsize TeeStreamBuf::xsputn(const char* s, std::streamsize n) {
     }
 
     auto tb = get_thread_buffer();
+    
+    // Update statistics for adaptive buffer sizing
+    tb->update_stats(n);
 
     // If n is larger than our buffer, write directly to streams
     if (static_cast<size_t>(n) >= tb->size) {
-        // Take a shared lock to read the streams
-        std::shared_lock<std::shared_mutex> lock(streams_mutex);
-
+        // Make a copy of the streams vector while holding the lock briefly
+        std::vector<std::reference_wrapper<std::ostream>> streams_copy;
+        {
+            std::shared_lock<std::shared_mutex> lock(streams_mutex);
+            streams_copy = streams;  // Make a copy
+        }
+        
+        // Write to each stream without holding the lock
         bool all_good = true;
-        for (auto& stream_ref : streams) {
+        for (auto& stream_ref : streams_copy) {
             std::ostream& stream = stream_ref.get();
             if (!stream.write(s, n)) {
                 all_good = false;
@@ -115,6 +158,9 @@ std::streamsize TeeStreamBuf::xsputn(const char* s, std::streamsize n) {
         
         return all_good ? n : 0;
     }
+    
+    // Check if we should adapt the buffer size
+    tb->adapt_buffer_size();
 
     // If adding n would overflow the buffer, flush first
     if (tb->used + n > tb->size) {
@@ -171,4 +217,4 @@ void TeeStream::remove_stream(std::ostream& stream) {
 // Flush the thread-local buffer
 void TeeStream::flush_thread_buffer() {
     buffer.flush_thread_buffer();
-} 
+}
