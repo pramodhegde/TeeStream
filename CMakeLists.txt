@@ -9,6 +9,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 # Options
 option(TEESTREAM_BUILD_TESTS "Build TeeStream tests" ON)
 option(TEESTREAM_BUILD_EXAMPLES "Build TeeStream examples" ON)
+option(TEESTREAM_BUILD_BENCHMARKS "Build TeeStream benchmarks" ON)
 
 # Library target
 add_library(teestream
@@ -64,6 +65,11 @@ install(
     DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/teestream
 )
 
+# Benchmarks
+if(TEESTREAM_BUILD_BENCHMARKS)
+    add_subdirectory(benchmarks)
+endif()
+
 # Tests
 if(TEESTREAM_BUILD_TESTS)
     # Set up GoogleTest
@@ -73,8 +79,9 @@ if(TEESTREAM_BUILD_TESTS)
         GIT_REPOSITORY https://github.com/google/googletest.git
         GIT_TAG release-1.12.1
     )
+    # No Windows-specific settings
     FetchContent_MakeAvailable(googletest)
-
+    
     enable_testing()
     add_subdirectory(tests)
 endif()
