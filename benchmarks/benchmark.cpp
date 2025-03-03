@@ -150,7 +150,7 @@ void benchmark_latency(int iterations) {
             tee.flush_thread_buffer();
             
             auto end = std::chrono::high_resolution_clock::now();
-            auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
+            auto duration = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count();
             latencies.push_back(duration);
         }
         
@@ -162,10 +162,10 @@ void benchmark_latency(int iterations) {
         double p99 = latencies[static_cast<size_t>(latencies.size() * 0.99)];
         
         std::cout << "Size: " << std::setw(8) << size << " bytes | "
-                  << "Avg: " << std::setw(8) << std::fixed << std::setprecision(2) << avg << " µs | "
-                  << "Median: " << std::setw(8) << median << " µs | "
-                  << "p95: " << std::setw(8) << p95 << " µs | "
-                  << "p99: " << std::setw(8) << p99 << " µs" << std::endl;
+                  << "Avg: " << std::setw(8) << std::fixed << std::setprecision(2) << avg << " ns | "
+                  << "Median: " << std::setw(8) << median << " ns | "
+                  << "p95: " << std::setw(8) << p95 << " ns | "
+                  << "p99: " << std::setw(8) << p99 << " ns" << std::endl;
     }
     
     std::cout << "\nNaive implementation latency:" << std::endl;
@@ -184,7 +184,7 @@ void benchmark_latency(int iterations) {
             null_stream2.flush();
             
             auto end = std::chrono::high_resolution_clock::now();
-            auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
+            auto duration = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count();
             latencies.push_back(duration);
         }
         
@@ -196,10 +196,10 @@ void benchmark_latency(int iterations) {
         double p99 = latencies[static_cast<size_t>(latencies.size() * 0.99)];
         
         std::cout << "Size: " << std::setw(8) << size << " bytes | "
-                  << "Avg: " << std::setw(8) << std::fixed << std::setprecision(2) << avg << " µs | "
-                  << "Median: " << std::setw(8) << median << " µs | "
-                  << "p95: " << std::setw(8) << p95 << " µs | "
-                  << "p99: " << std::setw(8) << p99 << " µs" << std::endl;
+                  << "Avg: " << std::setw(8) << std::fixed << std::setprecision(2) << avg << " ns | "
+                  << "Median: " << std::setw(8) << median << " ns | "
+                  << "p95: " << std::setw(8) << p95 << " ns | "
+                  << "p99: " << std::setw(8) << p99 << " ns" << std::endl;
     }
 }
 
