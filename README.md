@@ -104,6 +104,64 @@ int main() {
 }
 ```
 
+### Network and File Logging Example
+
+TeeStream can be used to simultaneously write to network sockets and files, which is useful for logging and data streaming applications:
+
+```cpp
+#include "TeeStream.h"
+#include <iostream>
+#include <fstream>
+#include <sys/socket.h>
+#include <arpa/inet.h>
+#include <unistd.h>
+
+// Custom streambuf for TCP socket
+class SocketStreambuf : public std::streambuf {
+    // ... implementation ...
+};
+
+class SocketStream : public std::ostream {
+    SocketStreambuf buf;
+public:
+    explicit SocketStream(int socket_fd) : std::ostream(nullptr), buf(socket_fd) {
+        rdbuf(&buf);
+    }
+};
+
+int main() {
+    // Create TCP socket
+    int sock_fd = /* connect to server */;
+    
+    // Create socket stream
+    SocketStream socket_stream(sock_fd);
+    
+    // Create file stream
+    std::ofstream file_stream("log.txt");
+    
+    // Create TeeStream to write to both socket and file
+    TeeStream tee;
+    tee.add_stream(socket_stream);
+    tee.add_stream(file_stream);
+    tee.add_stream(std::cout);  // Also write to console
+    
+    // Write to all streams simultaneously
+    tee << "This message goes to the network, file, and console!" << std::endl;
+    
+    return 0;
+}
+```
+
+A complete example is provided in `examples/socket_example.cpp`. To run it:
+
+```bash
+# First, start the test server (requires Python 3)
+python3 examples/simple_tcp_server.py
+
+# In another terminal, run the socket example
+./build/examples/socket_example
+```
+
 ### Thread Safety
 
 TeeStream is designed to be safely used from multiple threads simultaneously. Each thread maintains its own buffer, and the stream list is protected by a reader-writer lock.

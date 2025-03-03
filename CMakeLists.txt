@@ -70,6 +70,11 @@ if(TEESTREAM_BUILD_BENCHMARKS)
     add_subdirectory(benchmarks)
 endif()
 
+# Examples
+if(TEESTREAM_BUILD_EXAMPLES)
+    add_subdirectory(examples)
+endif()
+
 # Tests
 if(TEESTREAM_BUILD_TESTS)
     # Set up GoogleTest
