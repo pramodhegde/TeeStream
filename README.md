@@ -16,6 +16,7 @@ A high-performance thread-safe C++ library for writing to multiple output stream
 - C++17 compatible compiler
 - CMake 3.14 or higher (for building)
 - GoogleTest (automatically downloaded if not found, for testing)
+- Asio (automatically downloaded if not found, for network examples)
 
 ## Installation
 
@@ -102,6 +103,65 @@ int main() {
     
     return 0;
 }
+```
+
+### Network and File Logging Example
+
+TeeStream can be used to simultaneously write to network sockets and files, which is useful for logging and data streaming applications. The example uses Asio for modern, cross-platform networking:
+
+```cpp
+#include "TeeStream.h"
+#include <iostream>
+#include <fstream>
+#include <asio.hpp>
+
+// Custom streambuf for Asio TCP socket
+class AsioSocketStreambuf : public std::streambuf {
+    // ... implementation ...
+};
+
+class AsioSocketStream : public std::ostream {
+    // ... implementation ...
+public:
+    explicit AsioSocketStream(std::shared_ptr<asio::ip::tcp::socket> socket);
+    bool is_connected() const;
+};
+
+int main() {
+    // Initialize Asio
+    asio::io_context io_context;
+    auto socket = std::make_shared<asio::ip::tcp::socket>(io_context);
+    
+    // Connect to server
+    asio::connect(*socket, resolver.resolve("127.0.0.1", "12345"));
+    
+    // Create socket stream
+    AsioSocketStream socket_stream(socket);
+    
+    // Create file stream
+    std::ofstream file_stream("log.txt");
+    
+    // Create TeeStream to write to both socket and file
+    TeeStream tee;
+    tee.add_stream(socket_stream);
+    tee.add_stream(file_stream);
+    tee.add_stream(std::cout);  // Also write to console
+    
+    // Write to all streams simultaneously
+    tee << "This message goes to the network, file, and console!" << std::endl;
+    
+    return 0;
+}
+```
+
+A complete example is provided in `examples/socket_example.cpp`. To run it:
+
+```bash
+# First, start a TCP server (e.g., using netcat)
+nc -l 12345
+
+# In another terminal, run the socket example
+./build/examples/socket_example
 ```
 
 ### Thread Safety
