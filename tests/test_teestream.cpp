@@ -117,8 +117,8 @@ TEST(TeeStreamTest, MultithreadedAccess) {
     tee.add_stream(stream1);
     tee.add_stream(stream2);
     
-    const int num_threads = 4;  // Reduced from 10 to reduce contention
-    const int iterations = 50;  // Reduced from 100
+    const int num_threads = 10;
+    const int iterations = 100;
     
     std::mutex output_mutex;  // Add mutex for synchronizing output
     
@@ -127,9 +127,6 @@ TEST(TeeStreamTest, MultithreadedAccess) {
             // Use the mutex to synchronize access to the tee stream
             std::lock_guard<std::mutex> lock(output_mutex);
             tee << "Thread " << thread_id << " iteration " << i << std::endl;
-            
-            // Add a small sleep to reduce contention
-            std::this_thread::sleep_for(std::chrono::milliseconds(1));
         }
     };
     
